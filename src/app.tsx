@@ -1,6 +1,8 @@
 import * as Adw from "@gtkx/ffi/adw";
 import * as Gtk from "@gtkx/ffi/gtk";
 import {
+    ActionRow,
+    AdwActionRow,
     AdwApplicationWindow,
     AdwClamp,
     AdwHeaderBar,
@@ -29,6 +31,7 @@ import {
     calculateCoffee,
     calculateWater,
     formatNumber,
+    waterFromMetric,
     type BrewingMethod,
     type UnitSystem,
 } from "./utils/calculations.js";
@@ -82,6 +85,11 @@ export const App = () => {
 
     const coffeeUnit = unitSystem === "metric" ? "g" : "oz";
     const waterUnit = unitSystem === "metric" ? "ml" : "fl oz";
+    const espressoWater = unitSystem === "metric" ? 30 : waterFromMetric(30);
+    const mugWater = unitSystem === "metric" ? 250 : waterFromMetric(250);
+    const waterExamples = unitSystem === "metric"
+        ? "Usual Espresso: 30 ml and usual mug is 250 ml"
+        : `Usual Espresso: ${formatNumber(espressoWater)} fl oz and usual mug is ${formatNumber(mugWater)} fl oz`;
 
     const handleCoffeeChange = (value: number) => {
         setCoffeeValue(value);
@@ -171,45 +179,27 @@ export const App = () => {
                     <AdwClamp maximumSize={600}>
                         <AdwPreferencesPage>
                             {/* Brewing Method Selection */}
-                            <AdwPreferencesGroup title="Brewing Method" description="Select your brewing method">
-                                <GtkBox
-                                    orientation={Gtk.Orientation.HORIZONTAL}
-                                    spacing={12}
-                                    marginTop={12}
-                                    marginBottom={12}
-                                    marginStart={12}
-                                    marginEnd={12}
-                                >
-                                    <GtkLabel label="Method:" halign={Gtk.Align.START} hexpand />
-                                    <GtkDropDown
-                                        selectedId={brewingMethod}
-                                        onSelectionChanged={(id) => setBrewingMethod(id as BrewingMethod)}
-                                    >
-                                        {BREWING_METHODS.map((method) => (
-                                            <SimpleListItem key={method.id} id={method.id} value={method.name} />
-                                        ))}
-                                    </GtkDropDown>
-                                </GtkBox>
+                            <AdwPreferencesGroup>
+                                <AdwActionRow title="Brewing Method" subtitle="Select your brewing method">
+                                    <ActionRow.Suffix>
+                                        <GtkDropDown
+                                            selectedId={brewingMethod}
+                                            onSelectionChanged={(id) => setBrewingMethod(id as BrewingMethod)}
+                                            valign={Gtk.Align.CENTER}
+                                        >
+                                            {BREWING_METHODS.map((method) => (
+                                                <SimpleListItem key={method.id} id={method.id} value={method.name} />
+                                            ))}
+                                        </GtkDropDown>
+                                    </ActionRow.Suffix>
+                                </AdwActionRow>
                             </AdwPreferencesGroup>
 
 
                             {/* Calculator */}
                             <AdwPreferencesGroup title="Calculator" description="Enter coffee or water amount to calculate the other">
-                                <GtkBox
-                                    orientation={Gtk.Orientation.VERTICAL}
-                                    spacing={12}
-                                    marginTop={12}
-                                    marginBottom={12}
-                                    marginStart={12}
-                                    marginEnd={12}
-                                >
-                                    {/* Coffee Input */}
-                                    <GtkBox orientation={Gtk.Orientation.HORIZONTAL} spacing={12}>
-                                        <GtkLabel
-                                            label={`Coffee (${coffeeUnit}):`}
-                                            halign={Gtk.Align.START}
-                                            hexpand
-                                        />
+                                <AdwActionRow title={`Coffee (${coffeeUnit})`} subtitle="Before grinding">
+                                    <ActionRow.Suffix>
                                         <GtkSpinButton
                                             value={coffeeValue}
                                             onValueChanged={(spinButton: Gtk.SpinButton) =>
@@ -219,16 +209,15 @@ export const App = () => {
                                             digits={unitSystem === "metric" ? 0 : 2}
                                             climbRate={unitSystem === "metric" ? 1 : 0.1}
                                             widthChars={8}
+                                            valign={Gtk.Align.CENTER}
                                         />
-                                    </GtkBox>
-
-                                    {/* Water Input */}
-                                    <GtkBox orientation={Gtk.Orientation.HORIZONTAL} spacing={12}>
-                                        <GtkLabel
-                                            label={`Water (${waterUnit}):`}
-                                            halign={Gtk.Align.START}
-                                            hexpand
-                                        />
+                                    </ActionRow.Suffix>
+                                </AdwActionRow>
+                                <AdwActionRow
+                                    title={`Water (${waterUnit})`}
+                                    subtitle={waterExamples}
+                                >
+                                    <ActionRow.Suffix>
                                         <GtkSpinButton
                                             value={waterValue}
                                             onValueChanged={(spinButton: Gtk.SpinButton) =>
@@ -238,21 +227,25 @@ export const App = () => {
                                             digits={unitSystem === "metric" ? 0 : 2}
                                             climbRate={unitSystem === "metric" ? 1 : 0.1}
                                             widthChars={8}
+                                            valign={Gtk.Align.CENTER}
                                         />
-                                    </GtkBox>
+                                    </ActionRow.Suffix>
+                                </AdwActionRow>
 
-                                    {/* Ratio Info */}
-                                    <GtkBox
-                                        orientation={Gtk.Orientation.VERTICAL}
-                                        spacing={4}
-                                        marginTop={8}
-                                    >
-                                        <GtkLabel
-                                            label={`Ratio: 1:${(1 / BREWING_RATIOS[brewingMethod]).toFixed(0)} (coffee:water)`}
-                                            cssClasses={["dim-label", "caption"]}
-                                            halign={Gtk.Align.START}
-                                        />
-                                    </GtkBox>
+                                {/* Ratio Info */}
+                                <GtkBox
+                                    orientation={Gtk.Orientation.VERTICAL}
+                                    spacing={4}
+                                    marginTop={8}
+                                    marginBottom={12}
+                                    marginStart={12}
+                                    marginEnd={12}
+                                >
+                                    <GtkLabel
+                                        label={`Ratio: 1:${(1 / BREWING_RATIOS[brewingMethod]).toFixed(0)} (coffee:water)`}
+                                        cssClasses={["dim-label", "caption"]}
+                                        halign={Gtk.Align.START}
+                                    />
                                 </GtkBox>
                             </AdwPreferencesGroup>
                         </AdwPreferencesPage>
@@ -301,25 +294,20 @@ export const App = () => {
                             <GtkScrolledWindow vexpand>
                                 <AdwClamp maximumSize={600}>
                                     <AdwPreferencesPage>
-                                        <AdwPreferencesGroup title="Units" description="Choose your preferred measurement system">
-                                            <GtkBox
-                                                orientation={Gtk.Orientation.HORIZONTAL}
-                                                spacing={12}
-                                                marginTop={12}
-                                                marginBottom={12}
-                                                marginStart={12}
-                                                marginEnd={12}
-                                            >
-                                                <GtkLabel label="Measure System:" halign={Gtk.Align.START} hexpand />
-                                                <GtkDropDown
-                                                    selectedId={unitSystem}
-                                                    onSelectionChanged={(id) => setUnitSystem(id as UnitSystem)}
-                                                >
-                                                    {UNIT_SYSTEMS.map((system) => (
-                                                        <SimpleListItem key={system.id} id={system.id} value={system.name} />
-                                                    ))}
-                                                </GtkDropDown>
-                                            </GtkBox>
+                                        <AdwPreferencesGroup>
+                                            <AdwActionRow title="Units" subtitle="All conversions will use this">
+                                                <ActionRow.Suffix>
+                                                    <GtkDropDown
+                                                        selectedId={unitSystem}
+                                                        onSelectionChanged={(id) => setUnitSystem(id as UnitSystem)}
+                                                        valign={Gtk.Align.CENTER}
+                                                    >
+                                                        {UNIT_SYSTEMS.map((system) => (
+                                                            <SimpleListItem key={system.id} id={system.id} value={system.name} />
+                                                        ))}
+                                                    </GtkDropDown>
+                                                </ActionRow.Suffix>
+                                            </AdwActionRow>
                                         </AdwPreferencesGroup>
                                     </AdwPreferencesPage>
                                 </AdwClamp>
