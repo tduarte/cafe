@@ -193,6 +193,20 @@ export const App = () => {
                                         </GtkDropDown>
                                     </ActionRow.Suffix>
                                 </AdwActionRow>
+                                <GtkBox
+                                    orientation={Gtk.Orientation.VERTICAL}
+                                    spacing={4}
+                                    marginTop={8}
+                                    marginBottom={12}
+                                    marginStart={12}
+                                    marginEnd={12}
+                                >
+                                    <GtkLabel
+                                        label={`Ratio: 1:${(1 / BREWING_RATIOS[brewingMethod]).toFixed(0)} (coffee:water)`}
+                                        cssClasses={["dim-label", "caption"]}
+                                        halign={Gtk.Align.START}
+                                    />
+                                </GtkBox>
                             </AdwPreferencesGroup>
 
 
@@ -232,21 +246,6 @@ export const App = () => {
                                     </ActionRow.Suffix>
                                 </AdwActionRow>
 
-                                {/* Ratio Info */}
-                                <GtkBox
-                                    orientation={Gtk.Orientation.VERTICAL}
-                                    spacing={4}
-                                    marginTop={8}
-                                    marginBottom={12}
-                                    marginStart={12}
-                                    marginEnd={12}
-                                >
-                                    <GtkLabel
-                                        label={`Ratio: 1:${(1 / BREWING_RATIOS[brewingMethod]).toFixed(0)} (coffee:water)`}
-                                        cssClasses={["dim-label", "caption"]}
-                                        halign={Gtk.Align.START}
-                                    />
-                                </GtkBox>
                             </AdwPreferencesGroup>
                         </AdwPreferencesPage>
                     </AdwClamp>
