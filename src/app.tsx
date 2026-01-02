@@ -9,6 +9,7 @@ import {
     AdwToolbarView,
     createPortal,
     GtkBox,
+    GtkAboutDialog,
     GtkDropDown,
     GtkLabel,
     GtkMenuButton,
@@ -54,6 +55,7 @@ export const App = () => {
         // #endregion
         return false;
     });
+    const [showAbout, setShowAbout] = useState(false);
     const initialCoffee = 20;
     const [coffeeValue, setCoffeeValue] = useState(initialCoffee);
     const [waterValue, setWaterValue] = useState(() =>
@@ -110,43 +112,20 @@ export const App = () => {
         // #endregion
     }, [showPreferences]);
 
-    // Set modal and transient for preferences window
-    useEffect(() => {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/aeb57910-effe-46a8-9855-c3e20058d469',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.tsx:114',message:'useEffect for modal setup',data:{showPreferences,prefsRefExists:!!preferencesWindowRef.current,windowRefExists:!!windowRef.current},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B'})}).catch(()=>{});
-        // #endregion
-        if (preferencesWindowRef.current && windowRef.current) {
-            try {
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/aeb57910-effe-46a8-9855-c3e20058d469',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.tsx:105',message:'Setting modal and transient',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-                // #endregion
-                preferencesWindowRef.current.setModal(true);
-                preferencesWindowRef.current.setTransientFor(windowRef.current);
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/aeb57910-effe-46a8-9855-c3e20058d469',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.tsx:108',message:'Modal and transient set successfully',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-                // #endregion
-            } catch (e) {
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/aeb57910-effe-46a8-9855-c3e20058d469',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.tsx:111',message:'Error setting modal/transient',data:{error:String(e)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-                // #endregion
-            }
-        }
-    }, [showPreferences]);
-
 
     return (
         <AdwApplicationWindow
             ref={windowRef}
-            title="Coffee Calculator"
-            defaultWidth={500}
-            defaultHeight={600}
+            title="Cafe"
+            defaultWidth={520}
+            defaultHeight={640}
             onCloseRequest={quit}
         >
             <AdwToolbarView>
                 <Toolbar.Top>
                     <AdwHeaderBar>
                         <Slot for={AdwHeaderBar} id="titleWidget">
-                            <GtkLabel label="Coffee Calculator" cssClasses={["title"]} />
+                            <GtkLabel label="Cafe" cssClasses={["title"]} />
                         </Slot>
                         <Pack.End>
                             {(() => {
@@ -169,6 +148,9 @@ export const App = () => {
                                         throw e;
                                     }
                                 };
+                                const handleAbout = () => {
+                                    setShowAbout(true);
+                                };
                                 return (
                                     <GtkMenuButton iconName="open-menu-symbolic" cssClasses={["flat"]}>
                                         <Menu.Item
@@ -177,6 +159,7 @@ export const App = () => {
                                             onActivate={handlePreferences}
                                             accels="<Control>comma"
                                         />
+                                        <Menu.Item id="about" label="About Cafe" onActivate={handleAbout} />
                                     </GtkMenuButton>
                                 );
                             })()}
@@ -276,7 +259,7 @@ export const App = () => {
                     </AdwClamp>
                 </GtkScrolledWindow>
             </AdwToolbarView>
-            {showPreferences && app && (() => {
+            {showPreferences && app && windowRef.current && (() => {
                 // #region agent log
                 fetch('http://127.0.0.1:7242/ingest/aeb57910-effe-46a8-9855-c3e20058d469',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.tsx:279',message:'Portal condition check',data:{showPreferences,windowRefExists:!!windowRef.current},timestamp:Date.now(),sessionId:'debug-session',runId:'run5',hypothesisId:'A'})}).catch(()=>{});
                 // #endregion
@@ -295,7 +278,9 @@ export const App = () => {
                             // #endregion
                         }}
                         title="Preferences"
-                        defaultWidth={500}
+                        modal
+                        transientFor={windowRef.current}
+                        defaultWidth={420}
                         defaultHeight={400}
                         onCloseRequest={() => {
                             // #region agent log
@@ -341,6 +326,23 @@ export const App = () => {
                             </GtkScrolledWindow>
                         </AdwToolbarView>
                     </AdwApplicationWindow>,
+                    app
+                );
+            })()}
+            {showAbout && app && windowRef.current && (() => {
+                return createPortal(
+                    <GtkAboutDialog
+                        programName="Cafe"
+                        version="1.0"
+                        comments="Coffee calculator"
+                        website="https://github.com/tduarte/cafe"
+                        modal
+                        transientFor={windowRef.current}
+                        onCloseRequest={() => {
+                            setShowAbout(false);
+                            return false;
+                        }}
+                    />,
                     app
                 );
             })()}
