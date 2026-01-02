@@ -71,7 +71,7 @@ export const App = () => {
     // Create adjustments for spin buttons
     const coffeeAdjustment = useMemo(() => {
         const max = unitSystem === "metric" ? 1000 : 35;
-        const step = unitSystem === "metric" ? 1 : 0.1;
+        const step = unitSystem === "metric" ? 0.5 : 0.1;
         const currentValue = Math.min(coffeeValue, max);
         return new Gtk.Adjustment(currentValue, 0, max, step, step * 10, 0);
     }, [unitSystem]);
@@ -206,8 +206,8 @@ export const App = () => {
                                                 handleCoffeeChange(spinButton.getValue())
                                             }
                                             adjustment={coffeeAdjustment}
-                                            digits={unitSystem === "metric" ? 0 : 2}
-                                            climbRate={unitSystem === "metric" ? 1 : 0.1}
+                                            digits={unitSystem === "metric" ? 1 : 2}
+                                            climbRate={unitSystem === "metric" ? 0.5 : 0.1}
                                             widthChars={8}
                                             valign={Gtk.Align.CENTER}
                                         />
