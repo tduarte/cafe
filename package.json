@@ -1,0 +1,24 @@
+{
+    "name": "coffee-calculator",
+    "version": "0.0.0",
+    "private": true,
+    "description": "Coffee beans and water ratio calculator for different brewing methods",
+    "type": "module",
+    "gtkx": {
+        "appId": "com.gtkx.coffee-calculator"
+    },
+    "scripts": {
+        "build": "tsc -b",
+        "dev": "gtkx dev src/dev.tsx",
+        "start": "node dist/index.js"
+    },
+    "dependencies": {
+        "@gtkx/ffi": "workspace:*",
+        "@gtkx/react": "workspace:*",
+        "react": "^19"
+    },
+    "devDependencies": {
+        "@gtkx/cli": "workspace:*"
+    }
+}
+
