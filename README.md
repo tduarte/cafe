@@ -14,7 +14,7 @@ A simple, native GTK4 coffee beans and water ratio calculator for Linux desktop 
 
 ## Screenshots
 
-*Screenshots coming soon*
+![Cafe Application](assets/Screenshot.png)
 
 ## Installation
 
