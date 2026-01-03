@@ -117,7 +117,8 @@ examples/coffee-calculator/
 │   └── build-sea.sh                # SEA build script
 ├── sea-config.json                  # SEA configuration
 ├── assets/
-│   └── icon.png                     # Application icon
+│   ├── io.github.tduarte.Cafe.svg              # Main application icon (scalable)
+│   └── io.github.tduarte.Cafe-symbolic.svg     # Symbolic icon for UI elements
 └── dist/                            # Build output
     ├── app                          # Single executable
     ├── index.node                   # Native GTK4 bindings

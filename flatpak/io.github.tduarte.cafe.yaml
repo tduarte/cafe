@@ -67,7 +67,9 @@ modules:
         EOF
       - chmod +x /app/bin/cafe
       - install -Dm644 flatpak/io.github.tduarte.cafe.desktop /app/share/applications/io.github.tduarte.cafe.desktop
-      - install -Dm644 assets/icon.png /app/share/icons/hicolor/256x256/apps/io.github.tduarte.cafe.png
+      # Install SVG icons according to GNOME HIG
+      - install -Dm644 assets/io.github.tduarte.Cafe.svg /app/share/icons/hicolor/scalable/apps/io.github.tduarte.cafe.svg
+      - install -Dm644 assets/io.github.tduarte.Cafe-symbolic.svg /app/share/icons/hicolor/symbolic/apps/io.github.tduarte.cafe-symbolic.svg
     sources:
       - type: dir
         path: ..

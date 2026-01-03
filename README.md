@@ -2,7 +2,7 @@
 
 A simple, native GTK4 coffee beans and water ratio calculator for Linux desktop applications.
 
-![Cafe](assets/icon.png)
+![Cafe](assets/io.github.tduarte.Cafe.svg)
 
 ## Features
 

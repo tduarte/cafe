@@ -336,6 +336,7 @@ export const App = () => {
                         version="1.0"
                         comments="Coffee calculator"
                         website="https://github.com/tduarte/cafe"
+                        logoIconName="io.github.tduarte.cafe"
                         modal
                         transientFor={windowRef.current}
                         onCloseRequest={() => {
