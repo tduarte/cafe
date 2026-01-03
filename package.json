@@ -3,6 +3,8 @@
     "version": "0.0.0",
     "private": true,
     "description": "Coffee beans and water ratio calculator for different brewing methods",
+    "license": "GPL-3.0",
+    "author": "Thiago Duarte",
     "type": "module",
     "gtkx": {
         "appId": "io.github.tduarte.cafe"
