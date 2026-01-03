@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Cafe
+Comment=Coffee beans and water ratio calculator
+Exec=cafe
+Icon=io.github.tduarte.cafe
+Terminal=false
+Type=Application
+Categories=Utility;
+StartupNotify=true

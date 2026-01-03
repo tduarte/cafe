@@ -5,12 +5,15 @@
     "description": "Coffee beans and water ratio calculator for different brewing methods",
     "type": "module",
     "gtkx": {
-        "appId": "com.gtkx.coffee-calculator"
+        "appId": "io.github.tduarte.cafe"
     },
     "scripts": {
         "build": "tsc -b",
         "dev": "gtkx dev src/dev.tsx",
-        "start": "node dist/index.js"
+        "start": "node dist/index.js",
+        "bundle": "tsx scripts/bundle.ts",
+        "build:sea": "bash scripts/build-sea.sh",
+        "build:flatpak": "bash flatpak/build.sh"
     },
     "dependencies": {
         "@gtkx/ffi": "workspace:*",
@@ -18,7 +21,10 @@
         "react": "^19"
     },
     "devDependencies": {
-        "@gtkx/cli": "workspace:*"
+        "@gtkx/cli": "workspace:*",
+        "@types/react": "^19",
+        "esbuild": "^0.27.2",
+        "tsx": "^4.21.0",
+        "typescript": "^5.9.3"
     }
 }
-

@@ -1,0 +1,77 @@
+app-id: io.github.tduarte.cafe
+runtime: org.gnome.Platform
+runtime-version: "48"
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.node22
+command: cafe
+finish-args:
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+
+build-options:
+  append-path: /usr/lib/sdk/node22/bin
+  env:
+    npm_config_nodedir: /usr/lib/sdk/node22
+  no-debuginfo: true
+  strip: false
+
+modules:
+  - name: cafe
+    buildsystem: simple
+    build-commands:
+      - mkdir -p /app/bin /app/lib/cafe/node_modules/@gtkx/native/dist
+      - install -Dm755 dist/bundle.cjs /app/lib/cafe/bundle.cjs
+      # Copy native module to proper location
+      - install -Dm755 dist/index.node /app/lib/cafe/node_modules/@gtkx/native/dist/index.node
+      # Copy Node.js from SDK to app
+      - cp -r /usr/lib/sdk/node22 /app/lib/node22
+      # Create package.json for @gtkx/native
+      - |
+        cat > /app/lib/cafe/node_modules/@gtkx/native/package.json << 'PKGEOF'
+        {
+          "name": "@gtkx/native",
+          "version": "0.10.5",
+          "type": "module",
+          "exports": {
+            ".": {
+              "default": "./dist/index.js"
+            }
+          }
+        }
+        PKGEOF
+      # Create the wrapper index.js that loads index.node
+      - |
+        cat > /app/lib/cafe/node_modules/@gtkx/native/dist/index.js << 'IDXEOF'
+        import { createRequire } from "node:module";
+        const require = createRequire(import.meta.url);
+        const native = require("./index.node");
+        export function createRef(value) { return { value }; }
+        export function call(library, symbol, args, returnType) { return native.call(library, symbol, args, returnType); }
+        export function batchCall(calls) { native.batchCall(calls); }
+        export function start(appId, flags) { return native.start(appId, flags); }
+        export function stop() { native.stop(); }
+        export function read(objectId, type, offset) { return native.read(objectId, type, offset); }
+        export function write(objectId, type, offset, value) { native.write(objectId, type, offset, value); }
+        export function alloc(size, glibTypeName, lib) { return native.alloc(size, glibTypeName, lib); }
+        export function getObjectId(id) { return native.getObjectId(id); }
+        export function poll() { native.poll(); }
+        IDXEOF
+      - |
+        cat > /app/bin/cafe << 'EOF'
+        #!/bin/sh
+        export NODE_PATH=/app/lib/cafe/node_modules
+        exec /app/lib/node22/bin/node /app/lib/cafe/bundle.cjs
+        EOF
+      - chmod +x /app/bin/cafe
+      - install -Dm644 flatpak/io.github.tduarte.cafe.desktop /app/share/applications/io.github.tduarte.cafe.desktop
+      - install -Dm644 assets/icon.png /app/share/icons/hicolor/256x256/apps/io.github.tduarte.cafe.png
+    sources:
+      - type: dir
+        path: ..
+        skip:
+          - .flatpak-builder
+          - build-dir
+          - node_modules
