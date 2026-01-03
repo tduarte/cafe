@@ -88,8 +88,8 @@ export const App = () => {
     const espressoWater = unitSystem === "metric" ? 30 : waterFromMetric(30);
     const mugWater = unitSystem === "metric" ? 250 : waterFromMetric(250);
     const waterExamples = unitSystem === "metric"
-        ? "Usual Espresso: 30 ml and usual mug is 250 ml"
-        : `Usual Espresso: ${formatNumber(espressoWater)} fl oz and usual mug is ${formatNumber(mugWater)} fl oz`;
+        ? "Usual Espresso is 30 ml, and mug 250 ml"
+        : `Usual Espresso is ${formatNumber(espressoWater)} fl oz and usual mug is ${formatNumber(mugWater)} fl oz`;
 
     const handleCoffeeChange = (value: number) => {
         setCoffeeValue(value);
@@ -125,8 +125,8 @@ export const App = () => {
         <AdwApplicationWindow
             ref={windowRef}
             title="Cafe"
-            defaultWidth={520}
-            defaultHeight={640}
+            defaultWidth={500}
+            defaultHeight={380}
             onCloseRequest={quit}
         >
             <AdwToolbarView>
@@ -178,8 +178,8 @@ export const App = () => {
                 <GtkScrolledWindow vexpand>
                     <AdwClamp maximumSize={600}>
                         <AdwPreferencesPage>
-                            {/* Brewing Method Selection */}
-                            <AdwPreferencesGroup>
+                            {/* Calculator */}
+                            <AdwPreferencesGroup title="Calculator" description="Enter coffee or water amount.">
                                 <AdwActionRow title="Brewing Method" subtitle="Select your brewing method">
                                     <ActionRow.Suffix>
                                         <GtkDropDown
@@ -207,11 +207,6 @@ export const App = () => {
                                         halign={Gtk.Align.START}
                                     />
                                 </GtkBox>
-                            </AdwPreferencesGroup>
-
-
-                            {/* Calculator */}
-                            <AdwPreferencesGroup title="Calculator" description="Enter coffee or water amount to calculate the other">
                                 <AdwActionRow title={`Coffee (${coffeeUnit})`} subtitle="Before grinding">
                                     <ActionRow.Suffix>
                                         <GtkSpinButton
