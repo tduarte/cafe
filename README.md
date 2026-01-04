@@ -20,6 +20,15 @@ A simple, native GTK4 coffee beans and water ratio calculator for Linux desktop 
 
 ### From Flatpak (Recommended)
 
+First, build the Flatpak bundle:
+
+```bash
+# Build the Flatpak bundle
+pnpm build:flatpak
+```
+
+This creates `dist/io.github.tduarte.cafe.flatpak`. Then install and run:
+
 ```bash
 # Install from local bundle
 flatpak install --user dist/io.github.tduarte.cafe.flatpak
@@ -27,6 +36,8 @@ flatpak install --user dist/io.github.tduarte.cafe.flatpak
 # Run the application
 flatpak run io.github.tduarte.cafe
 ```
+
+See [FLATPAK.md](./FLATPAK.md) for detailed Flatpak build and deployment instructions.
 
 ### Building from Source
 
