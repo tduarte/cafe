@@ -19,6 +19,7 @@
     },
     "dependencies": {
         "@gtkx/ffi": "^0.11.1",
+        "@gtkx/native": "^0.11.1",
         "@gtkx/react": "^0.11.1",
         "react": "^19"
     },
