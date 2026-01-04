@@ -1,21 +1,17 @@
-name: Build Flatpak
-
 on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
-
+name: CI
 jobs:
   flatpak:
-    name: "Build Flatpak"
+    name: "Flatpak"
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-48
       options: --privileged
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -29,35 +25,21 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        working-directory: .
         run: pnpm install --frozen-lockfile
 
       - name: Build TypeScript
-        working-directory: examples/coffee-calculator
         run: pnpm build
 
       - name: Bundle JavaScript
-        working-directory: examples/coffee-calculator
         run: pnpm bundle
 
       - name: Copy native module
-        working-directory: examples/coffee-calculator
         run: |
           mkdir -p dist
-          cp ../../packages/native/index.node dist/index.node || \
-          cp node_modules/@gtkx/native/index.node dist/index.node || true
+          cp node_modules/@gtkx/native/index.node dist/index.node
 
-      - name: Build Flatpak
-        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
           bundle: io.github.tduarte.cafe.flatpak
-          manifest-path: examples/coffee-calculator/flatpak/io.github.tduarte.cafe.yaml
+          manifest-path: flatpak/io.github.tduarte.cafe.yaml
           cache-key: flatpak-builder-${{ github.sha }}
-          working-directory: examples/coffee-calculator
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: flatpak-bundle
-          path: examples/coffee-calculator/dist/io.github.tduarte.cafe.flatpak
-          retention-days: 30
