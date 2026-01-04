@@ -1,8 +1,26 @@
 {
-    "extends": "../../tsconfig.base.json",
     "compilerOptions": {
+        "composite": true,
+        "declaration": true,
+        "forceConsistentCasingInFileNames": true,
+        "incremental": true,
+        "jsx": "react-jsx",
+        "lib": ["ESNext"],
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "noUncheckedIndexedAccess": true,
+        "noUnusedLocals": false,
+        "noUnusedParameters": false,
+        "pretty": true,
+        "removeComments": false,
+        "resolveJsonModule": true,
         "rootDir": "src",
         "outDir": "dist",
+        "skipDefaultLibCheck": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "target": "ESNext",
+        "types": ["node"],
         "emitDeclarationOnly": false
     },
     "include": ["src/**/*"]
