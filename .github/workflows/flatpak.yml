@@ -22,10 +22,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Build TypeScript
         run: pnpm build
@@ -36,7 +35,15 @@ jobs:
       - name: Copy native module
         run: |
           mkdir -p dist
-          cp node_modules/@gtkx/native/index.node dist/index.node
+          if [ -f node_modules/@gtkx/native/index.node ]; then
+            cp node_modules/@gtkx/native/index.node dist/index.node
+          elif [ -f node_modules/@gtkx/native/dist/index.node ]; then
+            cp node_modules/@gtkx/native/dist/index.node dist/index.node
+          else
+            echo "Error: Could not find @gtkx/native/index.node"
+            find node_modules/@gtkx/native -name "*.node" || true
+            exit 1
+          fi
 
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
