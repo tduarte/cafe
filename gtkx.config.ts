@@ -24,5 +24,7 @@ export default defineConfig({
         developer: { id: "io.github.tduarte", name: "Thiago Duarte" },
         homepage: "https://github.com/tduarte/cafe",
         targets: ["flatpak"],
+        // build-aux/publish-repo.sh and the published .flatpakref expect this branch.
+        flatpak: { branch: "stable" },
     },
 });

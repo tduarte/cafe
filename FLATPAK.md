@@ -34,6 +34,11 @@ flatpak install --user build/out/io.github.tduarte.cafe-1.0.0-x86_64.flatpak
 flatpak run io.github.tduarte.cafe
 ```
 
+## Publishing
+
+Tagged releases are signed and published to a Flatpak repository on GitHub Pages by
+`.github/workflows/release.yml`. See [docs/RELEASING.md](docs/RELEASING.md).
+
 ## Changing packaging metadata
 
 Edit the `deploy` block in `gtkx.config.ts` (name, summary, description, categories, developer,
