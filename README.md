@@ -2,7 +2,7 @@
 
 A simple, native GTK4 coffee beans and water ratio calculator for Linux desktop applications.
 
-![Cafe](assets/io.github.tduarte.Cafe.svg)
+![Cafe](data/icons/hicolor/scalable/apps/io.github.tduarte.cafe.svg)
 
 ## Features
 
@@ -20,53 +20,46 @@ A simple, native GTK4 coffee beans and water ratio calculator for Linux desktop 
 
 ### From Flatpak (Recommended)
 
-First, build the Flatpak bundle:
+Install from the project's Flatpak repository, which also delivers updates:
 
 ```bash
-# Build the Flatpak bundle
+flatpak install --user https://tduarte.github.io/cafe/cafe.flatpakref
+```
+
+To build the bundle yourself instead (needs `flatpak-builder` and the GNOME 50 SDK):
+
+```bash
 pnpm build:flatpak
 ```
 
-This creates `dist/io.github.tduarte.cafe.flatpak`. Then install and run:
+Then install the generated bundle and run it:
 
 ```bash
-# Install from local bundle
-flatpak install --user dist/io.github.tduarte.cafe.flatpak
-
-# Run the application
+flatpak install --user build/out/io.github.tduarte.cafe-1.0.0-x86_64.flatpak
 flatpak run io.github.tduarte.cafe
 ```
 
-See [FLATPAK.md](./FLATPAK.md) for detailed Flatpak build and deployment instructions.
+See [FLATPAK.md](./FLATPAK.md) for details.
 
 ### Building from Source
 
 #### Prerequisites
 
-- Node.js 22 or later
+- Linux with GTK 4.20+ and Libadwaita 1.8+ (development libraries)
+- Node.js 24 or later
 - pnpm
-- Rust toolchain (for building native dependencies)
-- GTK4 development libraries
-- Libadwaita development libraries
 
 #### Setup
 
 ```bash
-# Clone the repository
 git clone https://github.com/tduarte/cafe.git
-cd cafe/examples/coffee-calculator
-
-# Install dependencies
+cd cafe
 pnpm install
 
-# Build the application
-pnpm build
-
-# Run in development mode
-pnpm dev
-
-# Run the production build
-pnpm start
+pnpm dev        # run with fast refresh
+pnpm typecheck  # regenerate bindings and type check
+pnpm build      # production bundle in dist/
+pnpm start      # run the production bundle
 ```
 
 ## Usage
@@ -88,32 +81,16 @@ pnpm start
 ### Project Structure
 
 ```
-coffee-calculator/
+cafe/
 ├── src/
-│   ├── app.tsx          # Main application component
-│   ├── index.tsx        # Production entry point
-│   ├── dev.tsx          # Development entry point
+│   ├── app.tsx              # Application, main window, preferences and about dialogs
+│   ├── index.tsx            # Entry point
 │   └── utils/
 │       └── calculations.ts  # Calculation logic and unit conversions
-├── flatpak/             # Flatpak packaging files
-├── scripts/             # Build scripts
-└── assets/              # Application assets (icons, etc.)
+├── data/icons/              # Application icons (hicolor layout)
+├── assets/                  # Screenshots and extra artwork
+└── gtkx.config.ts           # App ID, icon, and packaging metadata
 ```
-
-### Building for Distribution
-
-```bash
-# Build TypeScript
-pnpm build
-
-# Bundle JavaScript
-pnpm bundle
-
-# Build Flatpak
-pnpm build:flatpak
-```
-
-See [FLATPAK.md](./FLATPAK.md) for detailed Flatpak deployment instructions.
 
 ## Contributing
 

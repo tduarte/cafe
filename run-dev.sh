@@ -20,12 +20,12 @@ fi
 
 # Get the script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+PROJECT_ROOT="$SCRIPT_DIR"
 
 echo "Starting Coffee Calculator dev server..."
 echo "Project root: $PROJECT_ROOT"
 echo ""
 
 # Run the dev server in the distrobox container
-distrobox enter coffee-calc-dev -- bash -c "cd '$PROJECT_ROOT/examples/coffee-calculator' && pnpm run dev"
+distrobox enter coffee-calc-dev -- bash -c "cd '$PROJECT_ROOT' && pnpm run dev"
 

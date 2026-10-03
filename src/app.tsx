@@ -16,339 +16,239 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import * as Adw from "@gtkx/ffi/adw";
-import * as Gtk from "@gtkx/ffi/gtk";
+import { ComboRow } from "@gtkx/components/adw";
+import * as Gtk from "@gtkx/gi/gtk";
 import {
-    ActionRow,
-    AdwActionRow,
+    AdwAboutDialog,
+    AdwApplication,
     AdwApplicationWindow,
-    AdwClamp,
     AdwHeaderBar,
+    AdwPreferencesDialog,
     AdwPreferencesGroup,
     AdwPreferencesPage,
+    AdwSpinRow,
     AdwToolbarView,
-    createPortal,
-    GtkBox,
-    GtkAboutDialog,
-    GtkDropDown,
-    GtkLabel,
-    GtkMenuButton,
-    GtkScrolledWindow,
-    GtkSpinButton,
-    Menu,
-    Pack,
-    quit,
-    SimpleListItem,
-    Slot,
-    Toolbar,
-    useApplication,
-} from "@gtkx/react";
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+} from "@gtkx/jsx/adw";
+import { GMenu, GSimpleAction } from "@gtkx/jsx/gio";
+import { GtkAdjustment, GtkMenuButton } from "@gtkx/jsx/gtk";
+import { quit } from "@gtkx/react";
+import { useRef, useState } from "react";
 import {
     BREWING_RATIOS,
-    calculateCoffee,
-    calculateWater,
+    coffeeFromMetric,
+    coffeeToMetric,
     formatNumber,
+    MAX_WATER_ML,
+    maxCoffeeGrams,
     waterFromMetric,
+    waterToMetric,
     type BrewingMethod,
     type UnitSystem,
 } from "./utils/calculations.js";
 
-const BREWING_METHODS: { id: BrewingMethod; name: string }[] = [
-    { id: "espresso", name: "Espresso" },
-    { id: "pourOver", name: "Pour Over" },
-    { id: "frenchPress", name: "French Press" },
-    { id: "aeroPress", name: "AeroPress" },
+const BREWING_METHODS: { id: BrewingMethod; value: string }[] = [
+    { id: "espresso", value: "Espresso" },
+    { id: "pourOver", value: "Pour Over" },
+    { id: "frenchPress", value: "French Press" },
+    { id: "aeroPress", value: "AeroPress" },
 ];
 
-const UNIT_SYSTEMS: { id: UnitSystem; name: string }[] = [
-    { id: "metric", name: "Metric" },
-    { id: "imperial", name: "Imperial" },
+const UNIT_SYSTEMS: { id: UnitSystem; value: string }[] = [
+    { id: "metric", value: "Metric" },
+    { id: "imperial", value: "Imperial" },
 ];
 
+const isBrewingMethod = (id: string): id is BrewingMethod => id in BREWING_RATIOS;
+const isUnitSystem = (id: string): id is UnitSystem => id === "metric" || id === "imperial";
 
-export const App = () => {
-    const [brewingMethod, setBrewingMethod] = useState<BrewingMethod>("pourOver");
-    const [unitSystem, setUnitSystem] = useState<UnitSystem>("metric");
-    const [showPreferences, setShowPreferences] = useState(() => {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/aeb57910-effe-46a8-9855-c3e20058d469',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.tsx:50',message:'Initial showPreferences state',data:{value:false},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'C'})}).catch(()=>{});
-        // #endregion
-        return false;
-    });
-    const [showAbout, setShowAbout] = useState(false);
-    const initialCoffee = 20;
-    const [coffeeValue, setCoffeeValue] = useState(initialCoffee);
-    const [waterValue, setWaterValue] = useState(() =>
-        calculateWater(initialCoffee, "pourOver", "metric")
-    );
-    const app = useApplication();
-    const windowRef = useRef<Adw.ApplicationWindow | null>(null);
-    const preferencesWindowRef = useRef<Adw.ApplicationWindow | null>(null);
+// Spin rows report values rounded to their displayed digits, so a value within half a
+// display step of what we set is the echo of a programmatic update, not a user edit.
+const sameDisplayed = (a: number, b: number, digits: number) => Math.abs(a - b) <= 0.5 * 10 ** -digits + 1e-9;
 
-    // Create adjustments for spin buttons
-    const coffeeAdjustment = useMemo(() => {
-        const max = unitSystem === "metric" ? 1000 : 35;
-        const step = unitSystem === "metric" ? 0.5 : 0.1;
-        const currentValue = Math.min(coffeeValue, max);
-        return new Gtk.Adjustment(currentValue, 0, max, step, step * 10, 0);
-    }, [unitSystem]);
+type Dialog = "none" | "preferences" | "about";
 
-    const waterAdjustment = useMemo(() => {
-        const max = unitSystem === "metric" ? 2000 : 70;
-        const step = unitSystem === "metric" ? 1 : 0.1;
-        const currentValue = Math.min(waterValue, max);
-        return new Gtk.Adjustment(currentValue, 0, max, step, step * 10, 0);
-    }, [unitSystem]);
+type Brew = { grams: number; method: BrewingMethod; units: UnitSystem };
 
-    const coffeeUnit = unitSystem === "metric" ? "g" : "oz";
-    const waterUnit = unitSystem === "metric" ? "ml" : "fl oz";
-    const espressoWater = unitSystem === "metric" ? 30 : waterFromMetric(30);
-    const mugWater = unitSystem === "metric" ? 250 : waterFromMetric(250);
-    const waterExamples = unitSystem === "metric"
-        ? "Usual Espresso is 30 ml, and mug 250 ml"
-        : `Usual Espresso is ${formatNumber(espressoWater)} fl oz and usual mug is ${formatNumber(mugWater)} fl oz`;
+// Everything shown is derived from the coffee weight in grams, so switching units or
+// methods converts the display without accumulating rounding errors.
+const displayAmounts = ({ grams, method, units }: Brew) => {
+    const metric = units === "metric";
+    const waterMl = grams / BREWING_RATIOS[method];
+    return {
+        coffee: metric ? grams : coffeeFromMetric(grams),
+        water: metric ? waterMl : waterFromMetric(waterMl),
+        maxCoffee: metric ? maxCoffeeGrams(method) : coffeeFromMetric(maxCoffeeGrams(method)),
+        maxWater: metric ? MAX_WATER_ML[method] : waterFromMetric(MAX_WATER_ML[method]),
+        coffeeDigits: metric ? 1 : 2,
+        waterDigits: metric ? 0 : 2,
+    };
+};
+
+const MainWindow = () => {
+    const [brew, setBrewState] = useState<Brew>({ grams: 20, method: "pourOver", units: "metric" });
+    const [dialog, setDialog] = useState<Dialog>("none");
+    // Latest brew, readable from signal handlers that fire before React re-renders.
+    const brewRef = useRef(brew);
+
+    const setBrew = (next: Brew) => {
+        const grams = Math.min(Math.max(next.grams, 0), maxCoffeeGrams(next.method));
+        brewRef.current = { ...next, grams };
+        setBrewState(brewRef.current);
+    };
 
     const handleCoffeeChange = (value: number) => {
-        setCoffeeValue(value);
-        if (value > 0) {
-            setWaterValue(calculateWater(value, brewingMethod, unitSystem));
-        }
+        const current = brewRef.current;
+        const shown = displayAmounts(current);
+        if (sameDisplayed(value, shown.coffee, shown.coffeeDigits)) return;
+        setBrew({ ...current, grams: current.units === "metric" ? value : coffeeToMetric(value) });
     };
 
     const handleWaterChange = (value: number) => {
-        setWaterValue(value);
-        if (value > 0) {
-            setCoffeeValue(calculateCoffee(value, brewingMethod, unitSystem));
-        }
+        const current = brewRef.current;
+        const shown = displayAmounts(current);
+        if (sameDisplayed(value, shown.water, shown.waterDigits)) return;
+        const waterMl = current.units === "metric" ? value : waterToMetric(value);
+        setBrew({ ...current, grams: waterMl * BREWING_RATIOS[current.method] });
     };
 
-    // Update water when brewing method or unit system changes (keeping coffee constant)
-    useEffect(() => {
-        if (coffeeValue > 0) {
-            setWaterValue(calculateWater(coffeeValue, brewingMethod, unitSystem));
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [brewingMethod, unitSystem]);
+    // A new method keeps the coffee weight (clamped to that method's limit) and recalculates the water.
+    const handleBrewingMethodChange = (method: BrewingMethod) => setBrew({ ...brewRef.current, method });
+    const handleUnitSystemChange = (units: UnitSystem) => setBrew({ ...brewRef.current, units });
 
-    // Track showPreferences changes
-    useEffect(() => {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/aeb57910-effe-46a8-9855-c3e20058d469',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.tsx:107',message:'showPreferences state changed',data:{showPreferences,windowRefExists:!!windowRef.current},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'C'})}).catch(()=>{});
-        // #endregion
-    }, [showPreferences]);
-
+    const { method: brewingMethod, units: unitSystem } = brew;
+    const amounts = displayAmounts(brew);
+    const metric = unitSystem === "metric";
+    const coffeeUnit = metric ? "g" : "oz";
+    const waterUnit = metric ? "ml" : "fl oz";
+    const waterExamples = metric
+        ? "Usual Espresso is 30 ml, and mug 250 ml"
+        : `Usual Espresso is ${formatNumber(waterFromMetric(30))} fl oz and usual mug is ${formatNumber(waterFromMetric(250))} fl oz`;
+    const ratio = `Ratio 1:${(1 / BREWING_RATIOS[brewingMethod]).toFixed(0)} (coffee:water)`;
+    const coffeeStep = metric ? 0.5 : 0.05;
+    const waterStep = metric ? 5 : 0.25;
+    // Bounds change with units and method; remount the rows so a new value is never
+    // clamped against the old bounds and echoed back as if the user had edited it.
+    const rowKey = `${unitSystem}-${brewingMethod}`;
 
     return (
         <AdwApplicationWindow
-            ref={windowRef}
             title="Cafe"
             defaultWidth={500}
-            defaultHeight={380}
+            defaultHeight={420}
             onCloseRequest={quit}
+            actions={
+                <>
+                    <GSimpleAction name="preferences" onActivate={() => setDialog("preferences")} />
+                    <GSimpleAction name="about" onActivate={() => setDialog("about")} />
+                </>
+            }
         >
-            <AdwToolbarView>
-                <Toolbar.Top>
-                    <AdwHeaderBar>
-                        <Slot for={AdwHeaderBar} id="titleWidget">
-                            <GtkLabel label="Cafe" cssClasses={["title"]} />
-                        </Slot>
-                        <Pack.End>
-                            {(() => {
-                                // #region agent log
-                                fetch('http://127.0.0.1:7242/ingest/aeb57910-effe-46a8-9855-c3e20058d469',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.tsx:139',message:'Rendering menu button',data:{showPreferences},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'E'})}).catch(()=>{});
-                                // #endregion
-                                const handlePreferences = () => {
-                                    // #region agent log
-                                    fetch('http://127.0.0.1:7242/ingest/aeb57910-effe-46a8-9855-c3e20058d469',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.tsx:142',message:'Menu item activated',data:{windowRefExists:!!windowRef.current,currentShowPrefs:showPreferences},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'E'})}).catch(()=>{});
-                                    // #endregion
-                                    try {
-                                        setShowPreferences(true);
-                                        // #region agent log
-                                        fetch('http://127.0.0.1:7242/ingest/aeb57910-effe-46a8-9855-c3e20058d469',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.tsx:146',message:'State set to true',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'E'})}).catch(()=>{});
-                                        // #endregion
-                                    } catch (e) {
-                                        // #region agent log
-                                        fetch('http://127.0.0.1:7242/ingest/aeb57910-effe-46a8-9855-c3e20058d469',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.tsx:150',message:'Error setting state',data:{error:String(e),stack:e instanceof Error?e.stack:undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'E'})}).catch(()=>{});
-                                        // #endregion
-                                        throw e;
-                                    }
-                                };
-                                const handleAbout = () => {
-                                    setShowAbout(true);
-                                };
-                                return (
-                                    <GtkMenuButton iconName="open-menu-symbolic" cssClasses={["flat"]}>
-                                        <Menu.Item
-                                            id="preferences"
-                                            label="Preferences"
-                                            onActivate={handlePreferences}
-                                            accels="<Control>comma"
-                                        />
-                                        <Menu.Item id="about" label="About Cafe" onActivate={handleAbout} />
-                                    </GtkMenuButton>
-                                );
-                            })()}
-                        </Pack.End>
-                    </AdwHeaderBar>
-                </Toolbar.Top>
-
-                <GtkScrolledWindow vexpand>
-                    <AdwClamp maximumSize={600}>
-                        <AdwPreferencesPage>
-                            {/* Calculator */}
-                            <AdwPreferencesGroup title="Calculator" description="Enter coffee or water amount.">
-                                <AdwActionRow title="Brewing Method" subtitle="Select your brewing method">
-                                    <ActionRow.Suffix>
-                                        <GtkDropDown
-                                            selectedId={brewingMethod}
-                                            onSelectionChanged={(id) => setBrewingMethod(id as BrewingMethod)}
-                                            valign={Gtk.Align.CENTER}
-                                        >
-                                            {BREWING_METHODS.map((method) => (
-                                                <SimpleListItem key={method.id} id={method.id} value={method.name} />
-                                            ))}
-                                        </GtkDropDown>
-                                    </ActionRow.Suffix>
-                                </AdwActionRow>
-                                <GtkBox
-                                    orientation={Gtk.Orientation.VERTICAL}
-                                    spacing={4}
-                                    marginTop={8}
-                                    marginBottom={12}
-                                    marginStart={12}
-                                    marginEnd={12}
-                                >
-                                    <GtkLabel
-                                        label={`Ratio: 1:${(1 / BREWING_RATIOS[brewingMethod]).toFixed(0)} (coffee:water)`}
-                                        cssClasses={["dim-label", "caption"]}
-                                        halign={Gtk.Align.START}
+            <AdwToolbarView
+                topBar={
+                    <AdwHeaderBar
+                        end={
+                            <GtkMenuButton
+                                primary
+                                iconName="open-menu-symbolic"
+                                tooltipText="Main Menu"
+                                menuModel={
+                                    <GMenu
+                                        items={[
+                                            { section: [{ label: "Preferences", action: "win.preferences" }] },
+                                            { section: [{ label: "About Cafe", action: "win.about" }] },
+                                        ]}
                                     />
-                                </GtkBox>
-                                <AdwActionRow title={`Coffee (${coffeeUnit})`} subtitle="Before grinding">
-                                    <ActionRow.Suffix>
-                                        <GtkSpinButton
-                                            value={coffeeValue}
-                                            onValueChanged={(spinButton: Gtk.SpinButton) =>
-                                                handleCoffeeChange(spinButton.getValue())
-                                            }
-                                            adjustment={coffeeAdjustment}
-                                            digits={unitSystem === "metric" ? 1 : 2}
-                                            climbRate={unitSystem === "metric" ? 0.5 : 0.1}
-                                            widthChars={8}
-                                            valign={Gtk.Align.CENTER}
-                                        />
-                                    </ActionRow.Suffix>
-                                </AdwActionRow>
-                                <AdwActionRow
-                                    title={`Water (${waterUnit})`}
-                                    subtitle={waterExamples}
-                                >
-                                    <ActionRow.Suffix>
-                                        <GtkSpinButton
-                                            value={waterValue}
-                                            onValueChanged={(spinButton: Gtk.SpinButton) =>
-                                                handleWaterChange(spinButton.getValue())
-                                            }
-                                            adjustment={waterAdjustment}
-                                            digits={unitSystem === "metric" ? 0 : 2}
-                                            climbRate={unitSystem === "metric" ? 1 : 0.1}
-                                            widthChars={8}
-                                            valign={Gtk.Align.CENTER}
-                                        />
-                                    </ActionRow.Suffix>
-                                </AdwActionRow>
-
-                            </AdwPreferencesGroup>
-                        </AdwPreferencesPage>
-                    </AdwClamp>
-                </GtkScrolledWindow>
+                                }
+                            />
+                        }
+                    />
+                }
+            >
+                <AdwPreferencesPage>
+                    <AdwPreferencesGroup title="Calculator" description="Enter coffee or water amount.">
+                        <ComboRow
+                            title="Brewing Method"
+                            subtitle={ratio}
+                            items={BREWING_METHODS}
+                            selectedId={brewingMethod}
+                            onSelectionChanged={(id) => {
+                                if (isBrewingMethod(id)) handleBrewingMethodChange(id);
+                            }}
+                        />
+                        <AdwSpinRow
+                            key={`coffee-${rowKey}`}
+                            title={`Coffee (${coffeeUnit})`}
+                            subtitle="Before grinding"
+                            digits={amounts.coffeeDigits}
+                            climbRate={coffeeStep}
+                            adjustment={
+                                <GtkAdjustment
+                                    value={amounts.coffee}
+                                    lower={0}
+                                    upper={amounts.maxCoffee}
+                                    stepIncrement={coffeeStep}
+                                    pageIncrement={coffeeStep * 10}
+                                />
+                            }
+                            onNotifyValue={(value) => handleCoffeeChange(value ?? 0)}
+                        />
+                        <AdwSpinRow
+                            key={`water-${rowKey}`}
+                            title={`Water (${waterUnit})`}
+                            subtitle={waterExamples}
+                            digits={amounts.waterDigits}
+                            climbRate={waterStep}
+                            adjustment={
+                                <GtkAdjustment
+                                    value={amounts.water}
+                                    lower={0}
+                                    upper={amounts.maxWater}
+                                    stepIncrement={waterStep}
+                                    pageIncrement={waterStep * 10}
+                                />
+                            }
+                            onNotifyValue={(value) => handleWaterChange(value ?? 0)}
+                        />
+                    </AdwPreferencesGroup>
+                </AdwPreferencesPage>
             </AdwToolbarView>
-            {showPreferences && app && windowRef.current && (() => {
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/aeb57910-effe-46a8-9855-c3e20058d469',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.tsx:279',message:'Portal condition check',data:{showPreferences,windowRefExists:!!windowRef.current},timestamp:Date.now(),sessionId:'debug-session',runId:'run5',hypothesisId:'A'})}).catch(()=>{});
-                // #endregion
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/aeb57910-effe-46a8-9855-c3e20058d469',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.tsx:282',message:'About to create portal directly',data:{windowRefCurrent:!!windowRef.current},timestamp:Date.now(),sessionId:'debug-session',runId:'run5',hypothesisId:'D'})}).catch(()=>{});
-                // #endregion
-                return createPortal(
-                    <AdwApplicationWindow
-                        ref={(ref) => {
-                            // #region agent log
-                            fetch('http://127.0.0.1:7242/ingest/aeb57910-effe-46a8-9855-c3e20058d469',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.tsx:287',message:'Ref callback called',data:{refExists:!!ref,refType:ref?.constructor?.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run5',hypothesisId:'B'})}).catch(()=>{});
-                            // #endregion
-                            preferencesWindowRef.current = ref;
-                            // #region agent log
-                            fetch('http://127.0.0.1:7242/ingest/aeb57910-effe-46a8-9855-c3e20058d469',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.tsx:290',message:'Preferences window ref set',data:{refExists:!!preferencesWindowRef.current},timestamp:Date.now(),sessionId:'debug-session',runId:'run5',hypothesisId:'B'})}).catch(()=>{});
-                            // #endregion
-                        }}
-                        title="Preferences"
-                        modal
-                        transientFor={windowRef.current}
-                        defaultWidth={420}
-                        defaultHeight={400}
-                        onCloseRequest={() => {
-                            // #region agent log
-                            fetch('http://127.0.0.1:7242/ingest/aeb57910-effe-46a8-9855-c3e20058d469',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.tsx:297',message:'Preferences window close requested',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run5',hypothesisId:'D'})}).catch(()=>{});
-                            // #endregion
-                            setShowPreferences(false);
-                            return false;
-                        }}
-                    >
-                        <AdwToolbarView>
-                            <Toolbar.Top>
-                                <AdwHeaderBar>
-                                    <Slot for={AdwHeaderBar} id="titleWidget">
-                                        <GtkLabel label="Preferences" cssClasses={["title"]} />
-                                    </Slot>
-                                </AdwHeaderBar>
-                            </Toolbar.Top>
-                            <GtkScrolledWindow vexpand>
-                                <AdwClamp maximumSize={600}>
-                                    <AdwPreferencesPage>
-                                        <AdwPreferencesGroup>
-                                            <AdwActionRow title="Units" subtitle="All conversions will use this">
-                                                <ActionRow.Suffix>
-                                                    <GtkDropDown
-                                                        selectedId={unitSystem}
-                                                        onSelectionChanged={(id) => setUnitSystem(id as UnitSystem)}
-                                                        valign={Gtk.Align.CENTER}
-                                                    >
-                                                        {UNIT_SYSTEMS.map((system) => (
-                                                            <SimpleListItem key={system.id} id={system.id} value={system.name} />
-                                                        ))}
-                                                    </GtkDropDown>
-                                                </ActionRow.Suffix>
-                                            </AdwActionRow>
-                                        </AdwPreferencesGroup>
-                                    </AdwPreferencesPage>
-                                </AdwClamp>
-                            </GtkScrolledWindow>
-                        </AdwToolbarView>
-                    </AdwApplicationWindow>,
-                    app
-                );
-            })()}
-            {showAbout && app && windowRef.current && (() => {
-                return createPortal(
-                    <GtkAboutDialog
-                        programName="Cafe"
-                        version="1.0"
-                        comments="Coffee calculator"
-                        website="https://github.com/tduarte/cafe"
-                        logoIconName="io.github.tduarte.cafe"
-                        modal
-                        transientFor={windowRef.current}
-                        onCloseRequest={() => {
-                            setShowAbout(false);
-                            return false;
-                        }}
-                    />,
-                    app
-                );
-            })()}
+            {dialog === "preferences" && (
+                <AdwPreferencesDialog title="Preferences" onClosed={() => setDialog("none")}>
+                    <AdwPreferencesPage>
+                        <AdwPreferencesGroup>
+                            <ComboRow
+                                title="Units"
+                                subtitle="All conversions will use this"
+                                items={UNIT_SYSTEMS}
+                                selectedId={unitSystem}
+                                onSelectionChanged={(id) => {
+                                    if (isUnitSystem(id)) handleUnitSystemChange(id);
+                                }}
+                            />
+                        </AdwPreferencesGroup>
+                    </AdwPreferencesPage>
+                </AdwPreferencesDialog>
+            )}
+            {dialog === "about" && (
+                <AdwAboutDialog
+                    onClosed={() => setDialog("none")}
+                    applicationName="Cafe"
+                    applicationIcon="io.github.tduarte.cafe"
+                    version="1.0.0"
+                    developerName="Thiago Duarte"
+                    website="https://github.com/tduarte/cafe"
+                    licenseType={Gtk.License.GPL_3_0}
+                    comments="Coffee calculator"
+                />
+            )}
         </AdwApplicationWindow>
     );
 };
+
+export const App = () => (
+    <AdwApplication actionAccels={[{ detailedActionName: "win.preferences", accels: ["<Control>comma"] }]}>
+        <MainWindow />
+    </AdwApplication>
+);
 
 export default App;

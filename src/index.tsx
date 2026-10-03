@@ -16,9 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { render } from "@gtkx/react";
-import pkg from "../package.json" with { type: "json" };
+import { createRoot } from "@gtkx/react";
 import { App } from "./app.js";
 
-render(<App />, pkg.gtkx.appId);
-
+createRoot().render(<App />);

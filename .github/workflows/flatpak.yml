@@ -8,9 +8,16 @@ jobs:
     name: "Flatpak"
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-48
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-50
       options: --privileged
+    env:
+      # The container's HOME (/github/home) sits under a world-writable /github, which the
+      # SWC native addon refuses to use as a cache root. Keep caches under root's home.
+      XDG_CACHE_HOME: /root/.cache
+      SWC_NATIVE_BINDING_CACHE: /root/.cache/swc
     steps:
+      - name: Prepare cache directory
+        run: mkdir -p /root/.cache/swc && chmod 700 /root/.cache
       - uses: actions/checkout@v4
 
       - name: Setup pnpm
@@ -21,32 +28,26 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
+
+      # gtkx deploy builds against the GNOME 50 runtime from the user installation, and codegen
+      # needs GTK's GIR files, which this container only has inside the SDK.
+      - name: Install the GNOME 50 SDK
+        run: |
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y --noninteractive flathub org.gnome.Platform//50 org.gnome.Sdk//50
+          echo "GTKX_GIR_PATH=$(flatpak info --user --show-location org.gnome.Sdk//50)/files/share/gir-1.0" >> "$GITHUB_ENV"
 
       - name: Install dependencies
         run: pnpm install
 
-      - name: Build TypeScript
-        run: pnpm build
+      - name: Typecheck
+        run: pnpm typecheck
 
-      - name: Bundle JavaScript
-        run: pnpm bundle
+      - name: Build Flatpak
+        run: pnpm build:flatpak
 
-      - name: Copy native module
-        run: |
-          mkdir -p dist
-          if [ -f node_modules/@gtkx/native/index.node ]; then
-            cp node_modules/@gtkx/native/index.node dist/index.node
-          elif [ -f node_modules/@gtkx/native/dist/index.node ]; then
-            cp node_modules/@gtkx/native/dist/index.node dist/index.node
-          else
-            echo "Error: Could not find @gtkx/native/index.node"
-            find node_modules/@gtkx/native -name "*.node" || true
-            exit 1
-          fi
-
-      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+      - uses: actions/upload-artifact@v4
         with:
-          bundle: io.github.tduarte.cafe.flatpak
-          manifest-path: flatpak/io.github.tduarte.cafe.yaml
-          cache-key: flatpak-builder-${{ github.sha }}
+          name: io.github.tduarte.cafe.flatpak
+          path: build/out/*.flatpak

@@ -1,33 +1,39 @@
 {
-    "name": "coffee-calculator",
-    "version": "0.0.0",
+    "name": "cafe",
+    "version": "1.0.0",
     "private": true,
     "description": "Coffee beans and water ratio calculator for different brewing methods",
     "license": "GPL-3.0",
     "author": "Thiago Duarte",
     "type": "module",
-    "gtkx": {
-        "appId": "io.github.tduarte.cafe"
+    "engines": {
+        "node": ">=24"
     },
     "scripts": {
-        "build": "tsc -b",
-        "dev": "gtkx dev src/dev.tsx",
-        "start": "node dist/index.js",
-        "bundle": "tsx scripts/bundle.ts",
-        "build:sea": "bash scripts/build-sea.sh",
-        "build:flatpak": "bash flatpak/build.sh"
+        "dev": "gtkx dev",
+        "build": "gtkx build",
+        "codegen": "gtkx codegen",
+        "typecheck": "gtkx codegen && tsc",
+        "start": "node dist/bundle.mjs",
+        "deploy": "gtkx deploy",
+        "build:flatpak": "gtkx deploy --target flatpak"
     },
     "dependencies": {
-        "@gtkx/ffi": "^0.11.1",
-        "@gtkx/native": "^0.11.1",
-        "@gtkx/react": "^0.11.1",
-        "react": "^19"
+        "@gtkx/cairo": "^1.6.0",
+        "@gtkx/components": "^1.6.0",
+        "@gtkx/react": "^1.6.0",
+        "@gtkx/runtime": "^1.6.0",
+        "react": "^19.3.0"
     },
     "devDependencies": {
-        "@gtkx/cli": "^0.11.1",
-        "@types/react": "^19",
-        "esbuild": "^0.27.2",
-        "tsx": "^4.21.0",
-        "typescript": "^5.9.3"
+        "@gtkx/cli": "^1.6.0",
+        "@gtkx/config": "^1.6.0",
+        "@gtkx/testing": "^1.6.0",
+        "@types/node": "^26.6.4",
+        "@types/react": "^19.3.0",
+        "typescript": "^7.0.2"
+    },
+    "allowScripts": {
+        "@swc/core": true
     }
 }

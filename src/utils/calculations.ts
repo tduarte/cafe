@@ -26,6 +26,19 @@ export const BREWING_RATIOS = {
 
 export type BrewingMethod = keyof typeof BREWING_RATIOS;
 
+// Largest brew a home setup makes with each method, in ml of water. The coffee
+// limit is derived from it through the ratio, so the two amounts always fit together.
+export const MAX_WATER_ML: Record<BrewingMethod, number> = {
+    espresso: 60, // triple shot
+    pourOver: 1200, // 8-cup Chemex
+    frenchPress: 1500, // 12-cup press
+    aeroPress: 500, // AeroPress XL
+};
+
+export function maxCoffeeGrams(method: BrewingMethod): number {
+    return MAX_WATER_ML[method] * BREWING_RATIOS[method];
+}
+
 // Unit conversion constants
 export const OUNCES_TO_GRAMS = 28.35;
 export const FLUID_OUNCES_TO_MILLILITERS = 29.57;
