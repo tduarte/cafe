@@ -10,7 +10,14 @@ jobs:
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-50
       options: --privileged
+    env:
+      # The container's HOME (/github/home) sits under a world-writable /github, which the
+      # SWC native addon refuses to use as a cache root. Keep caches under root's home.
+      XDG_CACHE_HOME: /root/.cache
+      SWC_NATIVE_BINDING_CACHE: /root/.cache/swc
     steps:
+      - name: Prepare cache directory
+        run: mkdir -p /root/.cache/swc && chmod 700 /root/.cache
       - uses: actions/checkout@v4
 
       - name: Setup pnpm
