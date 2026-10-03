@@ -1,4 +1,8 @@
 node_modules/
 dist/
+build/
+.gtkx/
+*.log
 .DS_Store
 /flatpak-repo
+tsconfig*.tsbuildinfo
