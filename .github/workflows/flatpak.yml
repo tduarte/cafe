@@ -30,6 +30,14 @@ jobs:
         with:
           node-version: '24'
 
+      # gtkx deploy builds against the GNOME 50 runtime from the user installation, and codegen
+      # needs GTK's GIR files, which this container only has inside the SDK.
+      - name: Install the GNOME 50 SDK
+        run: |
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y --noninteractive flathub org.gnome.Platform//50 org.gnome.Sdk//50
+          echo "GTKX_GIR_PATH=$(flatpak info --user --show-location org.gnome.Sdk//50)/files/share/gir-1.0" >> "$GITHUB_ENV"
+
       - name: Install dependencies
         run: pnpm install
 

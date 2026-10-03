@@ -3,6 +3,9 @@ import { defineConfig } from "@gtkx/config";
 export default defineConfig({
     applicationId: "io.github.tduarte.cafe",
     applicationIcon: "data/icons",
+    // Codegen reads GIR files from the host by default. CI has no GTK development files, so it
+    // points this at the GNOME SDK's gir-1.0 directory instead (colon-separated).
+    girPath: process.env.GTKX_GIR_PATH?.split(":"),
     future: {
         v2ByteArrays: true,
         v2ValueReturns: true,
@@ -25,6 +28,7 @@ export default defineConfig({
         homepage: "https://github.com/tduarte/cafe",
         targets: ["flatpak"],
         // build-aux/publish-repo.sh and the published .flatpakref expect this branch.
-        flatpak: { branch: "stable" },
+        // rofiles-fuse is only a build-time optimization, and CI containers often lack FUSE.
+        flatpak: { branch: "stable", shouldUseRofilesFuse: false },
     },
 });
