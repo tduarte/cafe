@@ -82,6 +82,7 @@ REPO
 
 sed "s|@URL@|$url|g" "$here/pages/index.html" > "$site/index.html"
 cp "$root/data/icons/hicolor/scalable/apps/$app.svg" "$site/icon.svg"
-cp "$root/assets/Screenshot.png" "$site/screenshot.png"
+cp "$root/assets/Screenshot-light.png" "$site/screenshot-light.png"
+cp "$root/assets/Screenshot-dark.png" "$site/screenshot-dark.png"
 
 echo "publish-repo: wrote $site for $url"
